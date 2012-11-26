@@ -168,6 +168,7 @@ static inline NSInteger PSCollectionIndexForKey(PSCollectionViewKey *key) {
 @property (nonatomic, strong) NSMutableIndexSet *loadedIndices;
 
 @property (nonatomic, assign, readwrite) CGFloat headerViewHeight;
+@property (nonatomic, assign, readwrite) CGFloat footerViewHeight;
 
 /**
  Forces a relayout of the collection grid
@@ -218,7 +219,8 @@ viewKeysToRemove = _viewKeysToRemove,
 indexToRectMap = _indexToRectMap,
 colOffsets = _colOffsets,
 loadedIndices = _loadedIndices,
-headerViewHeight = _headerViewHeight;
+headerViewHeight = _headerViewHeight,
+footerViewHeight = _footerViewHeight;
 
 #pragma mark - Init/Memory
 
@@ -242,6 +244,7 @@ headerViewHeight = _headerViewHeight;
 		self.loadedIndices = [NSMutableIndexSet indexSet];
 		self.animateFirstCellAppearance = YES;
 		self.headerViewHeight = 0.0f;
+		self.footerViewHeight = 0.0f;
     }
     return self;
 }
@@ -323,6 +326,13 @@ headerViewHeight = _headerViewHeight;
 			self.headerViewHeight = headerSize.height;
 			
 			//need to adjust all the cells and column heights to reflect the new header height
+			[self relayoutViews];
+		}
+		
+		CGSize footerSize = [self.footerView sizeThatFits:CGSizeMake(self.width, CGFLOAT_MAX)];
+		if (self.footerViewHeight != footerSize.height) {
+			self.footerViewHeight = footerSize.height;
+			
 			[self relayoutViews];
 		}
 		
