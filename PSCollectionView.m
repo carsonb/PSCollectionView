@@ -386,7 +386,6 @@ headerViewHeight = _headerViewHeight;
     if (self.footerView) {
         self.footerView.width = self.width;
         self.footerView.top = totalHeight;
-        [self addSubview:self.footerView];
 		
 		CGSize footerSize = [self.footerView sizeThatFits:CGSizeMake(self.width, CGFLOAT_MAX)];
 		self.footerView.height = footerSize.height;
@@ -466,6 +465,8 @@ headerViewHeight = _headerViewHeight;
             self.emptyView.frame = CGRectMake(self.margin, top, self.width - self.margin * 2, self.height - top - self.margin);
             [self addSubview:self.emptyView];
         } else if (self.headerView) {
+			totalHeight = top;
+		} else {
 			totalHeight = top;
 		}
     }
