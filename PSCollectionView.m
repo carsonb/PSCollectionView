@@ -242,6 +242,10 @@ headerViewHeight = _headerViewHeight;
 		self.loadedIndices = [NSMutableIndexSet indexSet];
 		self.animateFirstCellAppearance = YES;
 		self.headerViewHeight = 0.0f;
+		
+		PSCollectionViewTapGestureRecognizer *recognizer = [[PSCollectionViewTapGestureRecognizer alloc] initWithTarget:self action:@selector(didSelectView:)];
+		[recognizer setCancelsTouchesInView:NO];
+		[self addGestureRecognizer:recognizer];
     }
     return self;
 }
@@ -548,14 +552,6 @@ headerViewHeight = _headerViewHeight;
 					} completion:nil];
 				}
 			}
-        
-            // Setup gesture recognizer
-            if ([newView.gestureRecognizers count] == 0) {
-                PSCollectionViewTapGestureRecognizer *gr = [[PSCollectionViewTapGestureRecognizer alloc] initWithTarget:self action:@selector(didSelectView:)];
-                gr.delegate = self;
-                [newView addGestureRecognizer:gr];
-                newView.userInteractionEnabled = YES;
-            }
             
             [self.visibleViews setObject:newView forKey:key];
         }
@@ -608,19 +604,35 @@ headerViewHeight = _headerViewHeight;
 #pragma mark - Gesture Recognizer
 
 - (void)didSelectView:(UITapGestureRecognizer *)gestureRecognizer {
-	NSValue *rectValue = [NSValue valueWithCGRect:gestureRecognizer.view.frame];
-    NSArray *matchingKeys = [self.indexToRectMap allKeysForObject:rectValue];
-    PSCollectionViewKey *key = [matchingKeys lastObject];
-    if ([gestureRecognizer.view isMemberOfClass:[[self.visibleViews objectForKey:key] class]]) {
-        if (self.collectionViewDelegate && [self.collectionViewDelegate respondsToSelector:@selector(collectionView:didSelectView:atIndex:)]) {
-            NSInteger matchingIndex = PSCollectionIndexForKey([matchingKeys lastObject]);
-            [self.collectionViewDelegate collectionView:self didSelectView:(PSCollectionViewCell *)gestureRecognizer.view atIndex:matchingIndex];
-        }
-    }
+	CGPoint tapPoint = [gestureRecognizer locationInView:self];
+	
+	//determine which grid item (if any) this tap was on
+	PSCollectionViewCell *viewCell = nil;
+	NSArray *visibleViewArray = [self.visibleViews allValues];
+	for (PSCollectionViewCell *view in visibleViewArray) {
+		if (CGRectContainsPoint(view.frame, tapPoint)) {
+			viewCell = view;
+			break;
+		}
+	}
+	
+	if (viewCell) {
+		NSValue *rectValue = [NSValue valueWithCGRect:viewCell.frame];
+		NSArray *matchingKeys = [self.indexToRectMap allKeysForObject:rectValue];
+		PSCollectionViewKey *key = [matchingKeys lastObject];
+		if ([viewCell isMemberOfClass:[[self.visibleViews objectForKey:key] class]]) {
+			if (self.collectionViewDelegate && [self.collectionViewDelegate respondsToSelector:@selector(collectionView:didSelectView:atIndex:)]) {
+				NSInteger matchingIndex = PSCollectionIndexForKey(key);
+				[self.collectionViewDelegate collectionView:self didSelectView:viewCell atIndex:matchingIndex];
+			}
+		}
+	}
 }
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
-    if (![gestureRecognizer isMemberOfClass:[PSCollectionViewTapGestureRecognizer class]]) return YES;
+    if ([gestureRecognizer isMemberOfClass:[PSCollectionViewTapGestureRecognizer class]] == NO) {
+		return YES;
+	}
     
     NSValue *rectValue = [NSValue valueWithCGRect:gestureRecognizer.view.frame];
     NSArray *matchingKeys = [self.indexToRectMap allKeysForObject:rectValue];
