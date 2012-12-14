@@ -41,11 +41,13 @@
 @property (nonatomic, assign, readonly) NSInteger numCols;
 @property (nonatomic, assign) NSInteger numColsLandscape;
 @property (nonatomic, assign) NSInteger numColsPortrait;
-@property (nonatomic, assign) BOOL animateFirstCellAppearance;
-@property (nonatomic, unsafe_unretained) id <PSCollectionViewDelegate> collectionViewDelegate;
-@property (nonatomic, unsafe_unretained) id <PSCollectionViewDataSource> collectionViewDataSource;
+@property (nonatomic, assign) BOOL animateLayoutChanges;
+@property (nonatomic, weak) id <PSCollectionViewDelegate> collectionViewDelegate;
+@property (nonatomic, weak) id <PSCollectionViewDataSource> collectionViewDataSource;
 
 #pragma mark - Public Methods
+
+- (void)invalidateLayout;
 
 /**
  Reloads the collection view
@@ -59,10 +61,12 @@
  */
 - (UIView *)dequeueReusableView;
 
-/**
- Tells the collection view one more PSCollectionViewCell is added to the end
- */
-- (void)appendView;
+- (void)insertItem;
+- (void)insertItemAtIndex:(NSUInteger)index;
+- (void)removeItemAtIndex:(NSUInteger)index;
+//TODO: support moving?
+
+- (void)performBatchUpdates:(void (^)(void))updates completion:(void (^)(void))completion;
 
 @end
 

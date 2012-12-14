@@ -23,6 +23,7 @@
 
 #import "PSCollectionView.h"
 #import "PSCollectionViewCell.h"
+#import "PSCollectionViewLayoutAttributes.h"
 
 #define kDefaultMargin 8.0
 #define kAnimationDuration 0.3f
@@ -169,56 +170,18 @@ static inline NSInteger PSCollectionIndexForKey(PSCollectionViewKey *key) {
 
 @property (nonatomic, assign, readwrite) CGFloat headerViewHeight;
 
-/**
- Forces a relayout of the collection grid
- */
-- (void)relayoutViews;
-
-/**
- Stores a view for later reuse
- TODO: add an identifier like UITableView
- */
-- (void)enqueueReusableView:(PSCollectionViewCell *)view;
-
-/**
- Magic!
- */
-- (void)removeAndAddCellsIfNecessary;
-
 @end
 
 @implementation PSCollectionView {
 	BOOL _resetLoadedIndices;
+	BOOL _batchUpdateInProgress;
+	BOOL _layoutInvalidated;
+	
+	NSMutableArray *_colXOffsets;
+	NSMutableArray *_colHeights;
+	
+	NSMutableArray *_items; //position is by index, value is PSCollectionViewLayoutAttribute objects
 }
-
-// Public Views
-@synthesize
-headerView = _headerView,
-footerView = _footerView,
-emptyView = _emptyView,
-loadingView = _loadingView;
-
-// Public
-@synthesize
-margin = _margin,
-colWidth = _colWidth,
-numCols = _numCols,
-numColsLandscape = _numColsLandscape,
-numColsPortrait = _numColsPortrait,
-animateFirstCellAppearance = _animateFirstCellAppearance,
-collectionViewDelegate = _collectionViewDelegate,
-collectionViewDataSource = _collectionViewDataSource;
-
-// Private
-@synthesize
-orientation = _orientation,
-reuseableViews = _reuseableViews,
-visibleViews = _visibleViews,
-viewKeysToRemove = _viewKeysToRemove,
-indexToRectMap = _indexToRectMap,
-colOffsets = _colOffsets,
-loadedIndices = _loadedIndices,
-headerViewHeight = _headerViewHeight;
 
 #pragma mark - Init/Memory
 
@@ -240,12 +203,15 @@ headerViewHeight = _headerViewHeight;
         self.viewKeysToRemove = [NSMutableArray array];
         self.indexToRectMap = [NSMutableDictionary dictionary];
 		self.loadedIndices = [NSMutableIndexSet indexSet];
-		self.animateFirstCellAppearance = YES;
+		self.animateLayoutChanges = YES;
 		self.headerViewHeight = 0.0f;
 		
 		PSCollectionViewTapGestureRecognizer *recognizer = [[PSCollectionViewTapGestureRecognizer alloc] initWithTarget:self action:@selector(didSelectView:)];
 		[recognizer setCancelsTouchesInView:NO];
 		[self addGestureRecognizer:recognizer];
+		
+		_items = [NSMutableArray array];
+		[self invalidateLayout];
     }
     return self;
 }
@@ -259,78 +225,263 @@ headerViewHeight = _headerViewHeight;
 
 #pragma mark - Setters
 
+- (void)setNumColsLandscape:(NSInteger)numColsLandscape
+{
+	_numColsLandscape = numColsLandscape;
+	[self invalidateLayout];
+}
+
+- (void)setNumColsPortrait:(NSInteger)numColsPortrait
+{
+	_numColsPortrait = numColsPortrait;
+	[self invalidateLayout];
+}
+
 - (void)setLoadingView:(UIView *)loadingView {
-    if (_loadingView) {
-        [_loadingView removeFromSuperview];
-    }
-    _loadingView = loadingView;
-    
-    [self addSubview:_loadingView];
+	[_loadingView removeFromSuperview];
+    _loadingView = nil;
 	
-	[self relayoutViews];
+	if (loadingView) {
+		_loadingView = loadingView;
+		[self addSubview:_loadingView];
+	}
+	
+	[self invalidateLayout];
 }
 
 - (void)setEmptyView:(UIView *)emptyView {
-	if (_emptyView) {
-		[_emptyView removeFromSuperview];
-	}
-	_emptyView = emptyView;
+	[_emptyView removeFromSuperview];
+	_emptyView = nil;
 	
-	[self addSubview:_emptyView];
+	if (emptyView) {
+		_emptyView = emptyView;
+		[self addSubview:_emptyView];
+	}
 	
 	[self relayoutViews];
 }
 
 - (void)setHeaderView:(UIView *)headerView {
-	if (_headerView) {
-		[_headerView removeFromSuperview];
+	[_headerView removeFromSuperview];
+	_headerView = nil;
+	
+	if (headerView) {
+		_headerView = headerView;
+		[self addSubview:_headerView];
 	}
-	_headerView = headerView;
 	
-	[self addSubview:_headerView];
-	
-	[self relayoutViews];
+	[self invalidateLayout];
 }
 
 - (void)setFooterView:(UIView *)footerView {
-	if (_footerView) {
-		[_footerView removeFromSuperview];
+	[_footerView removeFromSuperview];
+	_footerView = nil;
+	
+	if (footerView) {
+		_footerView = footerView;
+		[self addSubview:_footerView];
 	}
-	_footerView = footerView;
 	
-	[self addSubview:_footerView];
-	
-	[self relayoutViews];
+	[self invalidateLayout];
 }
 
 #pragma mark - DataSource
 
 - (void)reloadData {
 	_resetLoadedIndices = YES;
-    [self relayoutViews];
+    [self invalidateLayout];
 }
 
 #pragma mark - View
 
-- (void)layoutSubviews {
+- (void)invalidateLayout
+{
+	[_items enumerateObjectsWithOptions:NSEnumerationConcurrent usingBlock:^(PSCollectionViewLayoutAttributes *attributes, NSUInteger idx, BOOL *stop) {
+		attributes.valid = NO;
+	}];
+	
+	self.numCols = UIInterfaceOrientationIsPortrait(self.orientation) ? self.numColsPortrait : self.numColsLandscape;
+	
+	//reset the column offsets
+	_colXOffsets = nil;
+	
+	_colHeights = [NSMutableArray arrayWithCapacity:self.numCols];
+	for (int i = 0; i < self.numCols; i++) {
+		[_colHeights addObject:@(self.headerViewHeight + self.margin)];
+	}
+	
+	self.colWidth = floorf((self.width - self.margin * (self.numCols + 1)) / self.numCols);
+	
+	_layoutInvalidated = YES;
+}
+
+- (void)layoutSubviews
+{
     [super layoutSubviews];
-    
+	
     UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
     if (self.orientation != orientation) {
         self.orientation = orientation;
-        [self relayoutViews];
-	} else {
-		//determine if the header has changed height
-		CGSize headerSize = [self.headerView sizeThatFits:CGSizeMake(self.width, CGFLOAT_MAX)];
-		if (self.headerViewHeight != headerSize.height) {
-			self.headerView.height = headerSize.height;
-			self.headerViewHeight = headerSize.height;
-			
-			//need to adjust all the cells and column heights to reflect the new header height
-			[self relayoutViews];
-		}
 		
-		[self removeAndAddCellsIfNecessary];
+		[self invalidateLayout];
+//	} else {
+//		//determine if the header has changed height
+//		CGSize headerSize = [self.headerView sizeThatFits:CGSizeMake(self.width, CGFLOAT_MAX)];
+//		if (self.headerViewHeight != headerSize.height) {
+//			self.headerView.height = headerSize.height;
+//			self.headerViewHeight = headerSize.height;
+//			
+//			//need to adjust all the cells and column heights to reflect the new header height
+//			[self relayoutViews];
+//		}
+//		
+//		[self removeAndAddCellsIfNecessary];
+	}
+	
+	//TODO: determine if performLayout needs to be done on layoutSubviews
+	
+	//determine if the header has changed height
+	CGSize headerSize = [self.headerView sizeThatFits:CGSizeMake(self.width, CGFLOAT_MAX)];
+	if (self.headerViewHeight != headerSize.height) {
+		self.headerView.height = headerSize.height;
+		self.headerViewHeight = headerSize.height;
+		
+		//need to adjust all the cells and column heights to reflect the new header height
+		[self invalidateLayout];
+	}
+	
+	//TODO: put in animation block?
+	if (_layoutInvalidated) {
+		[self performLayout];
+	}
+}
+
+- (void)performLayout
+{
+	if (_colXOffsets == nil) {
+		_colXOffsets = [NSMutableArray arrayWithCapacity:self.numCols];
+		CGFloat left = self.margin;
+		for (int i = 0; i < self.numCols; i++) {
+			[_colXOffsets addObject:@(left)];
+			left += self.colWidth + self.margin;
+		}
+	}
+	
+	//TODO: handle empty data view
+	
+	//TODO: layout header
+	
+	//calculate the positions of all cells, but skip the cells that had no change
+	//a cell has a change if its layout is marked as invalid
+	[_items enumerateObjectsUsingBlock:^(PSCollectionViewLayoutAttributes *itemAttributes, NSUInteger idx, BOOL *stop) {
+		if (itemAttributes.valid == NO) {
+			//ensure we have the height for this item
+			CGFloat height = itemAttributes.frame.size.height;
+			if (height == 0.0f) {
+				height = [self.collectionViewDataSource heightForViewAtIndex:idx];
+			}
+			
+			//find the shortest column
+			NSUInteger shortestColumn = [self shortestColumn];
+			CGFloat colXOffset = [_colXOffsets[shortestColumn] floatValue];
+			CGFloat colHeight = [_colHeights[shortestColumn] floatValue];
+			CGRect frame = CGRectMake(colXOffset, colHeight, self.colWidth, height);
+			itemAttributes.frame = frame;
+			itemAttributes.currentColumn = shortestColumn;
+			itemAttributes.alpha = 1.0f;
+			itemAttributes.valid = YES;
+			itemAttributes.cell.frame = frame;
+			
+			//update the column heights
+			_colHeights[shortestColumn] = @(colHeight + height + self.margin);
+		}
+	}];
+	
+	//TODO: update footer position
+	
+	//update the content size
+	NSUInteger longestColumn = [self longestColumn];
+	self.contentSize = CGSizeMake(self.width, [_colHeights[longestColumn] floatValue]);
+	
+	_layoutInvalidated = NO;
+}
+
+- (void)insertItem
+{
+	[self insertItemAtIndex:[_items count]];
+}
+
+- (void)insertItemAtIndex:(NSUInteger)index
+{
+	PSCollectionViewCell *cell = [self.collectionViewDataSource collectionView:self viewAtIndex:index];
+	PSCollectionViewLayoutAttributes *attributes = [[PSCollectionViewLayoutAttributes alloc] init];
+	attributes.cell = cell;
+	
+	//if we are animating layout changes, fade in the cell
+	if (self.animateLayoutChanges) {
+		attributes.alpha = 0.0f;
+	}
+	
+	[_items insertObject:attributes atIndex:index];
+	[self addSubview:cell];
+	
+	[self invalidateLayoutOfItemsAfterIndex:index];
+	
+	//erform layout if not in a batch update
+	if (_batchUpdateInProgress == NO) {
+		[self performLayout];
+	}
+}
+
+- (void)removeItemAtIndex:(NSUInteger)index
+{
+	PSCollectionViewLayoutAttributes *attributes = _items[index];
+	[self enqueueReusableView:attributes.cell];
+	
+	[_items removeObjectAtIndex:index];
+	[self invalidateLayoutOfItemsAfterIndex:index];
+	
+	//update the column heights
+	[self updateHeightOfColumnsAtIndex:index];
+	
+	//perform layout if not in a batch update
+	if (_batchUpdateInProgress == NO) {
+		[self performLayout];
+	}
+}
+
+- (void)performBatchUpdates:(void (^)(void))updates completion:(void (^)(void))completion
+{
+	_batchUpdateInProgress = YES;
+	[UIView animateWithDuration:kAnimationDuration animations:^{
+		if (updates) {
+			updates();
+		}
+		//perform layout to apply the changes
+		[self performLayout];
+	} completion:^(BOOL finished) {
+		_batchUpdateInProgress = NO;
+		if (completion) {
+			completion();
+		}
+	}];
+}
+
+- (void)updateHeightOfColumnsAtIndex:(NSUInteger)index
+{
+	//get the max Y values from the previous elements in each column (only need to get numCols number of elements)
+	//TODO: make sure this is iterating the correct number of times
+	for (int i = index; i > index - self.numCols && i >=0; i--) {
+		PSCollectionViewLayoutAttributes *attributes = _items[i];
+		_colHeights[attributes.currentColumn] = @(CGRectGetMaxY(attributes.frame) + self.margin);
+	}
+}
+
+- (void)invalidateLayoutOfItemsAfterIndex:(NSUInteger)index
+{
+	for (int i=index; i < [_items count]; i++) {
+		PSCollectionViewLayoutAttributes *attributes = _items[i];
+		attributes.valid = NO;
 	}
 }
 
@@ -363,24 +514,15 @@ headerViewHeight = _headerViewHeight;
 	CGFloat top = [[_colOffsets objectAtIndex:col] floatValue];
 	CGFloat colHeight = [self.collectionViewDataSource heightForViewAtIndex:index];
 	if (colHeight == 0) {
-		colHeight = self.colWidth;
+		colHeight = self.margin;
 	}
-	
-	if (top != top) {
-		// NaN
-	}
-	
-	CGRect viewRect = CGRectMake(left, top, self.colWidth, colHeight);
 	
 	// Add to index rect map
+	CGRect viewRect = CGRectMake(left, top, self.colWidth, colHeight);
 	[self.indexToRectMap setObject:[NSValue valueWithCGRect:viewRect] forKey:key];
 	
 	// Update the last height offset for this column
 	CGFloat test = top + colHeight + self.margin;
-	
-	if (test != test) {
-		// NaN
-	}
 	[_colOffsets replaceObjectAtIndex:col withObject:[NSNumber numberWithFloat:test]];
 }
 
@@ -488,8 +630,9 @@ headerViewHeight = _headerViewHeight;
     static NSInteger bottomIndex = 0;
     
     NSInteger numViews = [self.collectionViewDataSource numberOfViewsInCollectionView:self];
-    
-    if (numViews == 0) return;
+    if (numViews == 0) {
+		return;
+	}
     
     // Find out what rows are visible
     CGRect visibleRect = CGRectMake(self.contentOffset.x, self.contentOffset.y, self.width, self.height);
@@ -498,7 +641,7 @@ headerViewHeight = _headerViewHeight;
     [self.visibleViews enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
         PSCollectionViewCell *view = (PSCollectionViewCell *)obj;
         CGRect viewRect = view.frame;
-        if (!CGRectIntersectsRect(visibleRect, viewRect)) {
+        if (CGRectIntersectsRect(visibleRect, viewRect) == NO) {
             [self enqueueReusableView:view];
             [self.viewKeysToRemove addObject:key];
         }
@@ -528,7 +671,6 @@ headerViewHeight = _headerViewHeight;
         topIndex = MAX(0, topIndex - (bufferViewFactor * self.numCols));
         bottomIndex = MIN(numViews, bottomIndex + (bufferViewFactor * self.numCols));
     }
-    //    NSLog(@"topIndex: %d, bottomIndex: %d", topIndex, bottomIndex);
     
     // Add views
     for (NSInteger i = topIndex; i < bottomIndex; i++) {
@@ -545,7 +687,7 @@ headerViewHeight = _headerViewHeight;
 			} else { //animate it in, add it to the set
 				[self.loadedIndices addIndex:i];
 				[self addSubview:newView];
-				if (self.animateFirstCellAppearance) {
+				if (self.animateLayoutChanges) {
 					newView.alpha = 0.0f;
 					[UIView animateWithDuration:kAnimationDuration delay:0.0f options:UIViewAnimationOptionAllowUserInteraction animations:^{
 						newView.alpha = 1.0f;
@@ -579,6 +721,36 @@ headerViewHeight = _headerViewHeight;
 	}
 }
 
+#pragma mark - Helpers
+
+- (NSUInteger)shortestColumn
+{
+	NSInteger col = 0;
+	CGFloat minHeight = [_colHeights[col] floatValue];
+	for (int i = 1; i < [_colHeights count]; i++) {
+		CGFloat colHeight = [_colHeights[i] floatValue];
+		if (colHeight < minHeight) {
+			col = i;
+			minHeight = colHeight;
+		}
+	}
+	return col;
+}
+
+- (NSUInteger)longestColumn
+{
+	NSInteger col = 0;
+	CGFloat maxHeight = [_colHeights[col] floatValue];
+	for (int i = 1; i < [_colHeights count]; i++) {
+		CGFloat colHeight = [_colHeights[i] floatValue];
+		if (colHeight > maxHeight) {
+			col = i;
+			maxHeight = colHeight;
+		}
+	}
+	return col;
+}
+
 #pragma mark - Reusing Views
 
 - (PSCollectionViewCell *)dequeueReusableView {
@@ -587,14 +759,11 @@ headerViewHeight = _headerViewHeight;
         // Found a reusable view, remove it from the set
         [self.reuseableViews removeObject:view];
     }
-    
     return view;
 }
 
 - (void)enqueueReusableView:(PSCollectionViewCell *)view {
-    if ([view respondsToSelector:@selector(prepareForReuse)]) {
-        [view performSelector:@selector(prepareForReuse)];
-    }
+	[view prepareForReuse];
     view.frame = CGRectZero;
 	view.alpha = 1.0f;
     [self.reuseableViews addObject:view];
@@ -637,12 +806,7 @@ headerViewHeight = _headerViewHeight;
     NSValue *rectValue = [NSValue valueWithCGRect:gestureRecognizer.view.frame];
     NSArray *matchingKeys = [self.indexToRectMap allKeysForObject:rectValue];
     NSString *key = [matchingKeys lastObject];
-    
-    if ([touch.view isMemberOfClass:[[self.visibleViews objectForKey:key] class]]) {
-        return YES;
-    } else {
-        return NO;
-    }
+	return [touch.view isMemberOfClass:[[self.visibleViews objectForKey:key] class]];
 }
 
 @end
