@@ -287,7 +287,8 @@ static inline NSInteger PSCollectionIndexForKey(PSCollectionViewKey *key) {
 
 #pragma mark - DataSource
 
-- (void)reloadData {
+- (void)reloadData
+{
 	_resetLoadedIndices = YES;
     [self invalidateLayout];
 }
@@ -484,6 +485,8 @@ static inline NSInteger PSCollectionIndexForKey(PSCollectionViewKey *key) {
 		attributes.valid = NO;
 	}
 }
+
+#pragma mark - Old code after this in the section
 
 - (void)buildColumnOffsetsFromTop:(CGFloat) top
 {
@@ -700,27 +703,6 @@ static inline NSInteger PSCollectionIndexForKey(PSCollectionViewKey *key) {
     }
 }
 
-- (void)appendView
-{
-	NSInteger numViews = [self.collectionViewDataSource numberOfViewsInCollectionView:self];
-	if ([self.indexToRectMap count] == 0 || numViews == 1) {
-		//just build via a reload
-		[self reloadData];
-	} else {
-		PSCollectionViewKey *key = PSCollectionKeyForIndex(numViews-1);
-		
-		// Find the shortest column
-		NSInteger col = [self findShortestColumn];
-		[self insertViewRectForIndex:numViews-1 forKey:key inColumn:col];
-		CGFloat totalHeight = [self totalHeightFromColOffsetsWithTotalHeight:0.0f];
-		
-		totalHeight = [self updateFooterViewWithTotalHeight:totalHeight];
-		
-		self.contentSize = CGSizeMake(self.width, totalHeight);
-		[self removeAndAddCellsIfNecessary];
-	}
-}
-
 #pragma mark - Helpers
 
 - (NSUInteger)shortestColumn
@@ -753,7 +735,8 @@ static inline NSInteger PSCollectionIndexForKey(PSCollectionViewKey *key) {
 
 #pragma mark - Reusing Views
 
-- (PSCollectionViewCell *)dequeueReusableView {
+- (PSCollectionViewCell *)dequeueReusableView
+{
     PSCollectionViewCell *view = [self.reuseableViews anyObject];
     if (view) {
         // Found a reusable view, remove it from the set
@@ -762,7 +745,8 @@ static inline NSInteger PSCollectionIndexForKey(PSCollectionViewKey *key) {
     return view;
 }
 
-- (void)enqueueReusableView:(PSCollectionViewCell *)view {
+- (void)enqueueReusableView:(PSCollectionViewCell *)view
+{
 	[view prepareForReuse];
     view.frame = CGRectZero;
 	view.alpha = 1.0f;
@@ -772,7 +756,8 @@ static inline NSInteger PSCollectionIndexForKey(PSCollectionViewKey *key) {
 
 #pragma mark - Gesture Recognizer
 
-- (void)didSelectView:(UITapGestureRecognizer *)gestureRecognizer {
+- (void)didSelectView:(UITapGestureRecognizer *)gestureRecognizer
+{
 	CGPoint tapPoint = [gestureRecognizer locationInView:self];
 	
 	//determine which grid item (if any) this tap was on
@@ -798,7 +783,8 @@ static inline NSInteger PSCollectionIndexForKey(PSCollectionViewKey *key) {
 	}
 }
 
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch
+{
     if ([gestureRecognizer isMemberOfClass:[PSCollectionViewTapGestureRecognizer class]] == NO) {
 		return YES;
 	}
