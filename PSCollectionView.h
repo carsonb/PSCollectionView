@@ -61,10 +61,9 @@
  */
 - (UIView *)dequeueReusableView;
 
-- (void)insertItem;
+- (void)insertItemAtEnd;
 - (void)insertItemAtIndex:(NSUInteger)index;
 - (void)removeItemAtIndex:(NSUInteger)index;
-//TODO: support moving?
 
 - (void)performBatchUpdates:(void (^)(void))updates completion:(void (^)(void))completion;
 

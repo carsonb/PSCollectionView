@@ -18,6 +18,7 @@
 		self.currentColumn = 0;
 		self.alpha = 1.0f;
 		self.valid = NO;
+		self.previouslyVisible = NO;
 	}
 	return self;
 }

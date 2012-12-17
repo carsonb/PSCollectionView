@@ -15,7 +15,8 @@
 @property (nonatomic, assign) NSUInteger currentColumn;
 @property (nonatomic, assign) CGFloat alpha;
 @property (nonatomic, assign) BOOL valid;
+@property (nonatomic, assign) BOOL previouslyVisible;
 
-@property (nonatomic, strong) PSCollectionViewCell *cell;
+@property (nonatomic, strong) PSCollectionViewCell *visibleCell;
 
 @end
