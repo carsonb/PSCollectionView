@@ -227,10 +227,16 @@
 	[self invalidateLayout];
 }
 
-#pragma mark - DataSource
+#pragma mark - Reset
 
 - (void)reloadData
 {
+	[_visibleItems removeAllIndexes];
+	for (PSCollectionViewLayoutAttributes *attributes in _items) {
+		[self enqueueReusableView:attributes.visibleCell];
+	}
+	[_items removeAllObjects];
+	
     [self invalidateLayout];
 }
 
