@@ -16,7 +16,6 @@
 	if (self) {
 		self.frame = CGRectZero;
 		self.currentColumn = 0;
-		self.alpha = 1.0f;
 		self.valid = NO;
 		self.previouslyVisible = NO;
 	}

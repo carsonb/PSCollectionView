@@ -122,7 +122,6 @@
 	
 	NSMutableSet *_reuseableViews;
 	
-	NSMutableIndexSet *_visibleItems;
 	NSMutableArray *_items; //position is by index, value is PSCollectionViewLayoutAttribute objects
 }
 
@@ -144,7 +143,6 @@
 		
         _orientation = [UIApplication sharedApplication].statusBarOrientation;
         _reuseableViews = [NSMutableSet set];
-		_visibleItems = [NSMutableIndexSet indexSet];
 		_items = [NSMutableArray array];
 		
 		PSCollectionViewTapGestureRecognizer *recognizer = [[PSCollectionViewTapGestureRecognizer alloc] initWithTarget:self action:@selector(didSelectView:)];
@@ -237,7 +235,6 @@
 
 - (void)reloadData
 {
-	[_visibleItems removeAllIndexes];
 	for (PSCollectionViewLayoutAttributes *attributes in _items) {
 		[self enqueueReusableView:attributes.visibleCell];
 	}
@@ -250,7 +247,6 @@
 
 - (void)invalidateLayout
 {
-	[_visibleItems removeAllIndexes];
 	[_items enumerateObjectsWithOptions:NSEnumerationConcurrent usingBlock:^(PSCollectionViewLayoutAttributes *attributes, NSUInteger idx, BOOL *stop) {
 		attributes.valid = NO;
 	}];
@@ -334,19 +330,20 @@
 			CGRect frame = CGRectMake(colXOffset, colHeight, self.colWidth, height);
 			itemAttributes.frame = frame;
 			itemAttributes.currentColumn = shortestColumn;
-			itemAttributes.alpha = 1.0f;
 			itemAttributes.valid = YES;
 			
 			//update the column heights
 			_colHeights[shortestColumn] = @(colHeight + height + self.margin);
 			recalculateContentSize = YES;
 			
-			if (self.animateLayoutChanges && itemAttributes.previouslyVisible) {
+			if (self.animateLayoutChanges && itemAttributes.previouslyVisible && itemAttributes.visibleCell) {
 				[UIView animateWithDuration:kAnimationDuration animations:^{
-					[self applyAttributes:itemAttributes toCell:itemAttributes.visibleCell];
+					itemAttributes.visibleCell.frame = itemAttributes.frame;
 				}];
 			} else {
-				[self applyAttributes:itemAttributes toCell:itemAttributes.visibleCell];
+				[UIView setAnimationsEnabled:NO];
+				itemAttributes.visibleCell.frame = itemAttributes.frame;
+				[UIView setAnimationsEnabled:YES];
 			}
 		}
 	}];
@@ -354,29 +351,31 @@
 	//Lays out items that are now visible and hides cells that are no longer visible
 	CGRect visibleRect = CGRectMake(self.contentOffset.x, self.contentOffset.y, self.width, self.height);
 	for (NSInteger i = 0; i < [_items count]; i++) {
-		PSCollectionViewLayoutAttributes *attributes = _items[i];
-		if (CGRectIntersectsRect(visibleRect, attributes.frame) == NO) {
+		PSCollectionViewLayoutAttributes *itemAttributes = _items[i];
+		BOOL visibleCell = CGRectIntersectsRect(visibleRect, itemAttributes.frame);
+		if (visibleCell == NO && itemAttributes.visibleCell) {
 			//Cell isn't visible, hide it
-			[self enqueueReusableView:attributes.visibleCell];
-			attributes.visibleCell = nil;
-			
-			[_visibleItems removeIndex:i];
-		} else if (attributes.visibleCell == nil) {
+			[self enqueueReusableView:itemAttributes.visibleCell];
+			itemAttributes.visibleCell = nil;
+		} else if (visibleCell && itemAttributes.visibleCell == nil) {
 			//Cell is now visible, add it in
             PSCollectionViewCell *newCell = [self.collectionViewDataSource collectionView:self viewAtIndex:i];
-			attributes.visibleCell = newCell;
+			itemAttributes.visibleCell = newCell;
 			[self addSubview:newCell];
-			[_visibleItems addIndex:i];
 			
-			if (self.animateLayoutChanges && attributes.previouslyVisible == NO) {
-				attributes.previouslyVisible = YES;
-				[self applyAttributes:attributes toCell:newCell];
+			if (self.animateLayoutChanges && itemAttributes.previouslyVisible == NO) {
+				itemAttributes.previouslyVisible = YES;
+				[UIView setAnimationsEnabled:NO];
+				newCell.frame = itemAttributes.frame;
 				newCell.alpha = 0.0f;
+				[UIView setAnimationsEnabled:YES];
 				[UIView animateWithDuration:kAnimationDuration delay:0.0f options:UIViewAnimationOptionAllowUserInteraction animations:^{
-					newCell.alpha = attributes.alpha;
+					newCell.alpha = 1.0f;
 				} completion:nil];
 			} else {
-				[self applyAttributes:attributes toCell:newCell];
+				[UIView setAnimationsEnabled:NO];
+				newCell.frame = itemAttributes.frame;
+				[UIView setAnimationsEnabled:YES];
 			}
 		}
     }
@@ -392,12 +391,6 @@
 	if (recalculateContentSize) {
 		[self updateContentSizeForColumnHeightChange];
 	}
-}
-
-- (void)applyAttributes:(PSCollectionViewLayoutAttributes *)attributes toCell:(PSCollectionViewCell *)cell
-{
-	cell.frame = attributes.frame;
-	cell.alpha = attributes.alpha;
 }
 
 - (void)insertItemAtEnd
@@ -551,9 +544,8 @@
 	
 	__block PSCollectionViewLayoutAttributes *selectedCell = nil;
 	__block NSUInteger selectedIndex = 0;
-	[_visibleItems enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-		PSCollectionViewLayoutAttributes *candidate = _items[idx];
-		if (CGRectContainsPoint(candidate.frame, tapPoint)) {
+	[_items enumerateObjectsUsingBlock:^(PSCollectionViewLayoutAttributes *candidate, NSUInteger idx, BOOL *stop) {
+		if (candidate.valid && CGRectContainsPoint(candidate.frame, tapPoint)) {
 			selectedCell = candidate;
 			selectedIndex = idx;
 			*stop = YES;

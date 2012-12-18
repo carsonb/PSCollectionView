@@ -13,7 +13,6 @@
 
 @property (nonatomic, assign) CGRect frame;
 @property (nonatomic, assign) NSUInteger currentColumn;
-@property (nonatomic, assign) CGFloat alpha;
 @property (nonatomic, assign) BOOL valid;
 @property (nonatomic, assign) BOOL previouslyVisible;
 
