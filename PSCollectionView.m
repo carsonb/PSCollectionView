@@ -178,6 +178,12 @@
 	[self invalidateLayout];
 }
 
+- (void)setMargin:(CGFloat)margin
+{
+	_margin = margin;
+	[self invalidateLayout];
+}
+
 - (void)setLoadingView:(UIView *)loadingView {
 	[_loadingView removeFromSuperview];
     _loadingView = nil;
@@ -335,7 +341,7 @@
 			_colHeights[shortestColumn] = @(colHeight + height + self.margin);
 			recalculateContentSize = YES;
 			
-			if (itemAttributes.previouslyVisible) {
+			if (self.animateLayoutChanges && itemAttributes.previouslyVisible) {
 				[UIView animateWithDuration:kAnimationDuration animations:^{
 					[self applyAttributes:itemAttributes toCell:itemAttributes.visibleCell];
 				}];
@@ -364,7 +370,7 @@
 			
 			if (self.animateLayoutChanges && attributes.previouslyVisible == NO) {
 				attributes.previouslyVisible = YES;
-				newCell.frame = attributes.frame;
+				[self applyAttributes:attributes toCell:newCell];
 				newCell.alpha = 0.0f;
 				[UIView animateWithDuration:kAnimationDuration delay:0.0f options:UIViewAnimationOptionAllowUserInteraction animations:^{
 					newCell.alpha = attributes.alpha;
