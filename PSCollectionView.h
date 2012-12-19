@@ -59,7 +59,7 @@
  Dequeues a reusable view that was previously initialized
  This is similar to UITableView dequeueReusableCellWithIdentifier
  */
-- (UIView *)dequeueReusableView;
+- (PSCollectionViewCell *)dequeueReusableViewWithIdentifier:(NSString *)reuseIdentifier;
 
 - (void)insertItemAtEnd;
 - (void)insertItemAtIndex:(NSUInteger)index;

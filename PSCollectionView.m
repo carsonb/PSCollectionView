@@ -120,7 +120,7 @@
 	NSMutableArray *_colXOffsets;
 	NSMutableArray *_colHeights;
 	
-	NSMutableSet *_reuseableViews;
+	NSMutableDictionary *_reusableViews;
 	
 	NSMutableArray *_items; //position is by index, value is PSCollectionViewLayoutAttribute objects
 }
@@ -142,7 +142,7 @@
 		self.animateLayoutChanges = YES;
 		
         _orientation = [UIApplication sharedApplication].statusBarOrientation;
-        _reuseableViews = [NSMutableSet set];
+		_reusableViews = [NSMutableDictionary dictionary];
 		_items = [NSMutableArray array];
 		
 		PSCollectionViewTapGestureRecognizer *recognizer = [[PSCollectionViewTapGestureRecognizer alloc] initWithTarget:self action:@selector(didSelectView:)];
@@ -521,14 +521,22 @@
 
 #pragma mark - Reusing Views
 
-- (PSCollectionViewCell *)dequeueReusableView
+- (PSCollectionViewCell *)dequeueReusableViewWithIdentifier:(NSString *)reuseIdentifier
 {
-    PSCollectionViewCell *view = [_reuseableViews anyObject];
-    if (view) {
-        // Found a reusable view, remove it from the set
-        [_reuseableViews removeObject:view];
-    }
-    return view;
+	if ([reuseIdentifier length] == 0) {
+		return nil;
+	}
+	
+	NSMutableSet *reusableViewsForIdentifier = [_reusableViews objectForKey:reuseIdentifier];
+	if (reusableViewsForIdentifier) {
+		PSCollectionViewCell *view = [reusableViewsForIdentifier anyObject];
+		if (view) {
+			// Found a reusable view, remove it from the set
+			[reusableViewsForIdentifier removeObject:view];
+			return view;
+		}
+	}
+	return nil;
 }
 
 - (void)enqueueReusableView:(PSCollectionViewCell *)view
@@ -540,7 +548,12 @@
 	[view prepareForReuse];
     view.frame = CGRectZero;
 	view.alpha = 1.0f;
-    [_reuseableViews addObject:view];
+	
+	NSMutableSet *reusableViewsForIdentifier = [_reusableViews objectForKey:view.reuseIdentifier];
+	if (reusableViewsForIdentifier == nil && [view.reuseIdentifier length] > 0) {
+		[_reusableViews setObject:[NSMutableSet set] forKey:view.reuseIdentifier];
+	}
+	[reusableViewsForIdentifier addObject:view];
     [view removeFromSuperview];
 }
 

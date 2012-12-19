@@ -23,32 +23,29 @@
 
 #import "PSCollectionViewCell.h"
 
-@interface PSCollectionViewCell ()
-
-@end
-
 @implementation PSCollectionViewCell
 
-@synthesize
-object = _object;
-
-- (id)initWithFrame:(CGRect)frame {
-    self = [super initWithFrame:frame];
-    if (self) {
-    }
-    return self;
+- (id)initWithFrame:(CGRect)frame reuseIdentifier:(NSString *)reuseIdentifier
+{
+	self = [super initWithFrame:frame];
+	if (self) {
+		_reuseIdentifier = [reuseIdentifier copy];
+	}
+	return self;
 }
 
-
-- (void)prepareForReuse {
+- (void)prepareForReuse
+{
 	self.object = nil;
 }
 
-- (void)fillViewWithObject:(id)object {
+- (void)fillViewWithObject:(id)object
+{
     self.object = object;
 }
 
-+ (CGFloat)heightForViewWithObject:(id)object inColumnWidth:(CGFloat)columnWidth {
++ (CGFloat)heightForViewWithObject:(id)object inColumnWidth:(CGFloat)columnWidth
+{
     return 0.0;
 }
 
