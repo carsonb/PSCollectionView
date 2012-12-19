@@ -238,9 +238,16 @@
 	for (PSCollectionViewLayoutAttributes *attributes in _items) {
 		[self enqueueReusableView:attributes.visibleCell];
 	}
-	[_items removeAllObjects];
+	_items = [NSMutableArray array];
+	
+	//recreate items for the number of views that will appear in the grid
+	NSInteger numCells = [self.collectionViewDataSource numberOfViewsInCollectionView:self];
+	for (NSInteger i = 0; i < numCells; i++) {
+		[_items addObject:[[PSCollectionViewLayoutAttributes alloc] init]];
+	}
 	
     [self invalidateLayout];
+	[self setNeedsLayout];
 }
 
 #pragma mark - View
