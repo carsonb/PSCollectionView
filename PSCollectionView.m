@@ -249,6 +249,7 @@
 {
 	[_items enumerateObjectsWithOptions:NSEnumerationConcurrent usingBlock:^(PSCollectionViewLayoutAttributes *attributes, NSUInteger idx, BOOL *stop) {
 		attributes.valid = NO;
+		attributes.frame = CGRectZero;
 	}];
 	
 	self.numCols = UIInterfaceOrientationIsPortrait(_orientation) ? self.numColsPortrait : self.numColsLandscape;
