@@ -391,7 +391,11 @@ headerViewHeight = _headerViewHeight;
         self.footerView.width = self.width;
         self.footerView.top = totalHeight;
 		
-		CGSize footerSize = [self.footerView sizeThatFits:CGSizeMake(self.width, CGFLOAT_MAX)];
+		CGFloat availableHeight = self.height - totalHeight;
+		if (availableHeight <= 0.0f) {
+			availableHeight = CGFLOAT_MAX;
+		}
+		CGSize footerSize = [self.footerView sizeThatFits:CGSizeMake(self.width, availableHeight)];
 		self.footerView.height = footerSize.height;
         totalHeight += self.footerView.height;
     }
