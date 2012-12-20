@@ -61,9 +61,8 @@
  */
 - (PSCollectionViewCell *)dequeueReusableViewWithIdentifier:(NSString *)reuseIdentifier;
 
-- (void)insertItemAtEnd;
-- (void)insertItemAtIndex:(NSUInteger)index;
-- (void)removeItemAtIndex:(NSUInteger)index;
+- (void)insertItemAtIndexPath:(NSIndexPath *)indexPath;
+- (void)removeItemAtIndexPath:(NSIndexPath *)indexPath;
 
 - (void)performBatchUpdates:(void (^)(void))updates completion:(void (^)(void))completion;
 
@@ -74,7 +73,7 @@
 @protocol PSCollectionViewDelegate <NSObject>
 
 @optional
-- (void)collectionView:(PSCollectionView *)collectionView didSelectView:(PSCollectionViewCell *)view atIndex:(NSInteger)index;
+- (void)collectionView:(PSCollectionView *)collectionView didSelectView:(PSCollectionViewCell *)view atIndexPath:(NSIndexPath *)indexPath;
 
 @end
 
@@ -83,8 +82,9 @@
 @protocol PSCollectionViewDataSource <NSObject>
 
 @required
-- (NSInteger)numberOfViewsInCollectionView:(PSCollectionView *)collectionView;
-- (PSCollectionViewCell *)collectionView:(PSCollectionView *)collectionView viewAtIndex:(NSInteger)index;
-- (CGFloat)heightForViewAtIndex:(NSInteger)index;
+- (NSUInteger)numberOfSectionsInCollectionView:(PSCollectionView *)collectionView;
+- (NSUInteger)collectionView:(PSCollectionView *)collectionView numberOfViewsInSection:(NSUInteger)section;
+- (PSCollectionViewCell *)collectionView:(PSCollectionView *)collectionView viewAtIndexPath:(NSIndexPath *)indexPath;
+- (CGFloat)heightForViewAtIndexPath:(NSIndexPath *)indexPath;
 
 @end
