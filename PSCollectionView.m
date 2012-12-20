@@ -231,6 +231,12 @@
 	[self invalidateLayout];
 }
 
+- (void)setFrame:(CGRect)frame
+{
+	[super setFrame:frame];
+	[self invalidateLayout];
+}
+
 #pragma mark - Reset
 
 - (void)reloadData
