@@ -448,7 +448,13 @@
 	}];
 	
 	//layout footer
-	CGSize footerSize = [self.footerView sizeThatFits:CGSizeMake(self.width, CGFLOAT_MAX)];
+	NSUInteger longestColumn = [self longestColumn];
+	CGFloat longestColumnHeight = [_colHeights[longestColumn] floatValue];
+	CGFloat availableHeight = self.height - longestColumnHeight;
+	if (availableHeight <= 0.0f) {
+		availableHeight = CGFLOAT_MAX;
+	}
+	CGSize footerSize = [self.footerView sizeThatFits:CGSizeMake(self.width, availableHeight)];
 	if (self.footerView.height != footerSize.height) {
 		self.footerView.height = footerSize.height;
 		recalculateContentSize = YES;
