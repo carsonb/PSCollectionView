@@ -598,7 +598,7 @@
 	}
 	
 	if (section > 0) {
-		for (NSUInteger i = 0; i < section - 1; i++) {
+		for (NSUInteger i = 0; i < section; i++) {
 			height += [self heightOfLongestColumnInSection:i];
 		}
 	}
