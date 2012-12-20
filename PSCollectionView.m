@@ -447,10 +447,14 @@
 		}
 	}];
 	
-	//layout footer
-	NSUInteger longestColumn = [self longestColumn];
-	CGFloat longestColumnHeight = [_colHeights[longestColumn] floatValue];
-	CGFloat availableHeight = self.height - longestColumnHeight;
+	//get the height of the longest column in the last section
+	CGFloat availableHeight = self.height;
+	if (_numSections > 0) {
+		NSUInteger lastSection = _numSections - 1;
+		NSUInteger longestColumnInSection = [self longestColumnInSection:lastSection];
+		CGFloat longestColumnHeight = [self yOffsetForItemInSection:lastSection column:longestColumnInSection];
+		availableHeight -= longestColumnHeight;
+	}
 	if (availableHeight <= 0.0f) {
 		availableHeight = CGFLOAT_MAX;
 	}
@@ -626,17 +630,25 @@
 	return col;
 }
 
-- (CGFloat)heightOfLongestColumnInSection:(NSUInteger)section
+- (NSUInteger)longestColumnInSection:(NSUInteger)section
 {
+	NSInteger col = 0;
 	NSMutableArray *sectionColumnHeights = _sectionColumnHeights[section];
-	CGFloat maxHeight = [sectionColumnHeights[0] floatValue];
+	CGFloat maxHeight = [sectionColumnHeights[col] floatValue];
 	for (int i = 1; i < [sectionColumnHeights count]; i++) {
 		CGFloat colHeight = [sectionColumnHeights[i] floatValue];
 		if (colHeight > maxHeight) {
+			col = i;
 			maxHeight = colHeight;
 		}
 	}
-	return maxHeight;
+	return col;
+}
+
+- (CGFloat)heightOfLongestColumnInSection:(NSUInteger)section
+{
+	NSUInteger longestColumn = [self longestColumnInSection:section];
+	return [_sectionColumnHeights[section][longestColumn] floatValue];
 }
 
 #pragma mark - Reusing Views
