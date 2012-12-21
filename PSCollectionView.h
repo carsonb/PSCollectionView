@@ -87,4 +87,7 @@
 - (PSCollectionViewCell *)collectionView:(PSCollectionView *)collectionView viewAtIndexPath:(NSIndexPath *)indexPath;
 - (CGFloat)heightForViewAtIndexPath:(NSIndexPath *)indexPath;
 
+@optional
+- (UIView *)sectionHeaderForSection:(NSUInteger)section;
+
 @end

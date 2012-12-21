@@ -24,6 +24,8 @@
 #import "PSCollectionView.h"
 #import "PSCollectionViewCell.h"
 #import "PSCollectionViewLayoutAttributes.h"
+#import "PSCollectionViewItemLayoutAttributes.h"
+#import "PSCollectionViewSectionViewLayoutAttributes.h"
 
 #define kDefaultMargin 8.0
 #define kAnimationDuration 0.3f
@@ -114,18 +116,17 @@
 
 @implementation PSCollectionView {
 	BOOL _batchUpdateInProgress;
-	
-	NSInteger _numSections;
-	
 	UIInterfaceOrientation _orientation;
 	
-	NSMutableArray *_colXOffsets;
-	
-	NSMutableArray *_sectionColumnHeights; //contains an array of arrays, first array is positioned by section number, values are the heights of each column within each section
+	BOOL _initialLayoutDataInitialized;
 	
 	NSMutableDictionary *_reusableViews;
 	
+	NSMutableArray *_colXOffsets;
+	NSInteger _numSections;
+	NSMutableArray *_sectionColumnHeights; //contains an array of arrays, first array is positioned by section number, values are the heights of each column within each section
 	NSMutableDictionary *_sectionItems; //key is section number, value is array with position is by index, value is PSCollectionViewLayoutAttribute objects
+	NSMutableArray *_sectionHeaders;
 }
 
 #pragma mark - Init/Memory
@@ -148,6 +149,7 @@
         _orientation = [UIApplication sharedApplication].statusBarOrientation;
 		_reusableViews = [NSMutableDictionary dictionary];
 		_sectionItems = [NSMutableDictionary dictionary];
+		_sectionHeaders = [NSMutableArray array];
 		
 		PSCollectionViewTapGestureRecognizer *recognizer = [[PSCollectionViewTapGestureRecognizer alloc] initWithTarget:self action:@selector(didSelectView:)];
 		[recognizer setCancelsTouchesInView:NO];
@@ -245,32 +247,68 @@
 
 - (void)reloadData
 {
+	_initialLayoutDataInitialized = NO;
+	
 	for (NSArray *sectionItems in [_sectionItems allValues]) {
-		for (PSCollectionViewLayoutAttributes *attributes in sectionItems) {
+		for (PSCollectionViewItemLayoutAttributes *attributes in sectionItems) {
 			[self enqueueReusableView:attributes.visibleCell];
 		}
 	}
 	
+	[self initializeRequiredLayoutData];
+
+    [self invalidateLayout];
+	[self setNeedsLayout];
+}
+
+- (void)resetSectionHeadersFooters
+{
+	for (PSCollectionViewSectionViewLayoutAttributes *sectionAttributes in _sectionHeaders) {
+		[sectionAttributes.view removeFromSuperview];
+	}
+	_sectionHeaders = [NSMutableArray array];
+	
+	//retrieve the section header and footers
+	for (NSUInteger i = 0; i < _numSections; i++) {
+		PSCollectionViewSectionViewLayoutAttributes *headerAttributes = [[PSCollectionViewSectionViewLayoutAttributes alloc] init];
+		if ([self.collectionViewDataSource respondsToSelector:@selector(sectionHeaderForSection:)]) {
+			UIView *sectionHeader = [self.collectionViewDataSource sectionHeaderForSection:i];
+			headerAttributes.view = sectionHeader;
+			[self addSubview:sectionHeader];
+		}
+		[_sectionHeaders addObject:headerAttributes];
+	}
+}
+
+- (void)initializeRequiredLayoutData
+{
 	_sectionItems = [NSMutableDictionary dictionary];
 	
 	_numSections = [self.collectionViewDataSource numberOfSectionsInCollectionView:self];
+	//ensure there are entries for earlier sections
+	for (NSUInteger i = [_sectionColumnHeights count]; i < _numSections; i++) {
+		[_sectionColumnHeights addObject:[NSMutableArray array]];
+		[self resetColumnHeightsInSection:i];
+	}
+	
 	for (NSUInteger i = 0; i < _numSections; i++) {
 		//recreate items for the number of views that will appear in the grid
 		NSInteger numCells = [self.collectionViewDataSource collectionView:self numberOfViewsInSection:i];
 		NSMutableArray *items = [NSMutableArray arrayWithCapacity:numCells];
 		for (NSUInteger i = 0; i < numCells; i++) {
-			[items addObject:[[PSCollectionViewLayoutAttributes alloc] init]];
+			[items addObject:[[PSCollectionViewItemLayoutAttributes alloc] init]];
 		}
 		[_sectionItems setObject:items forKey:@(i)];
 	}
 	
-    [self invalidateLayout];
-	[self setNeedsLayout];
+	[self resetSectionHeadersFooters];
+	
+	_initialLayoutDataInitialized = YES;
 }
 
 #pragma mark - View
 
-- (void)invalidateItemLayoutAttributes:(PSCollectionViewLayoutAttributes *)attributes
+- (void)invalidateItemLayoutAttributes:(PSCollectionViewItemLayoutAttributes *)attributes
 {
 	attributes.valid = NO;
 	attributes.frame = CGRectZero;
@@ -278,8 +316,11 @@
 
 - (void)invalidateLayout
 {
+	for (PSCollectionViewSectionViewLayoutAttributes *sectionHeader in _sectionHeaders) {
+		sectionHeader.valid = NO;
+	}
 	for (NSArray *sectionItems in [_sectionItems allValues]) {
-		[sectionItems enumerateObjectsWithOptions:NSEnumerationConcurrent usingBlock:^(PSCollectionViewLayoutAttributes *attributes, NSUInteger idx, BOOL *stop) {
+		[sectionItems enumerateObjectsWithOptions:NSEnumerationConcurrent usingBlock:^(PSCollectionViewItemLayoutAttributes *attributes, NSUInteger idx, BOOL *stop) {
 			[self invalidateItemLayoutAttributes:attributes];
 		}];
 	}
@@ -295,6 +336,8 @@
 	} else {
 		self.colWidth = floorf((self.width - self.margin * (self.numCols + 1)) / self.numCols);
 	}
+	
+	[self resetSectionHeadersFooters];
 }
 
 - (void)resetColumnHeights
@@ -302,7 +345,7 @@
 	//sections are assumed to be the same height, this will change as items are added to each sections
 	_sectionColumnHeights = [NSMutableArray array];
 	for (NSUInteger i = 0; i < _numSections; i++) {
-		[_sectionColumnHeights addObject:@0.0f]; //ensure the array has a position for this section, this simplifies the resetColumnHeightsInSection method
+		[_sectionColumnHeights addObject:[NSMutableArray array]]; //ensure the array has a position for this section, this simplifies the resetColumnHeightsInSection method
 		[self resetColumnHeightsInSection:i];
 	}
 }
@@ -333,6 +376,10 @@
 
 - (void)performLayout
 {
+	if (_initialLayoutDataInitialized == NO) {
+		[self initializeRequiredLayoutData];
+	}
+	
 	__block BOOL recalculateContentSize = NO;
 	
 	//layout header
@@ -373,9 +420,24 @@
 	
 	//calculate the positions of all cells, but skip the cells that had no change
 	//a cell has a change if its layout is marked as invalid
-	[_sectionItems enumerateKeysAndObjectsUsingBlock:^(NSNumber *sectionNumber, NSArray *sectionItems, BOOL *stop) {
-		NSUInteger section = [sectionNumber integerValue];
-		[sectionItems enumerateObjectsUsingBlock:^(PSCollectionViewLayoutAttributes *itemAttributes, NSUInteger idx, BOOL *stop) {
+	for (NSUInteger section = 0; section < _numSections; section++) {
+		NSNumber *sectionNumber = @(section);
+		
+		//layout the section header
+		PSCollectionViewSectionViewLayoutAttributes *sectionHeaderAttributes = [self sectionHeaderAttributesForSection:section];
+		if (sectionHeaderAttributes.view && sectionHeaderAttributes.valid == NO) {
+			UIView *sectionHeader = sectionHeaderAttributes.view;
+			CGSize headerSize = [sectionHeader sizeThatFits:CGSizeMake(self.width, CGFLOAT_MAX)];
+			CGFloat yOffset = [self yOffsetForBeginningOfSection:section];
+			sectionHeader.frame = CGRectMake(CGRectGetMinX(self.bounds), yOffset, self.width, headerSize.height);
+			sectionHeaderAttributes.valid = YES;
+			
+			recalculateContentSize = YES;
+		}
+		
+		//layout the section items
+		NSMutableArray *sectionItems = _sectionItems[sectionNumber];
+		[sectionItems enumerateObjectsUsingBlock:^(PSCollectionViewItemLayoutAttributes *itemAttributes, NSUInteger idx, BOOL *stop) {
 			if (itemAttributes.valid == NO) {
 				NSIndexPath *indexPath = [NSIndexPath indexPathForItem:idx inSection:section];
 				
@@ -409,14 +471,14 @@
 				}
 			}
 		}];
-	}];
+	};
 	
 	
 	//Lays out items that are now visible and hides cells that are no longer visible
 	CGRect visibleRect = CGRectMake(self.contentOffset.x, self.contentOffset.y, self.width, self.height);
 	[_sectionItems enumerateKeysAndObjectsUsingBlock:^(NSNumber *sectionNumber, NSArray *sectionItems, BOOL *stop) {
 		for (NSUInteger i = 0; i < [sectionItems count]; i++) {
-			PSCollectionViewLayoutAttributes *itemAttributes = sectionItems[i];
+			PSCollectionViewItemLayoutAttributes *itemAttributes = sectionItems[i];
 			BOOL visibleCell = CGRectIntersectsRect(visibleRect, itemAttributes.frame);
 			if (visibleCell == NO && itemAttributes.visibleCell) {
 				//Cell isn't visible, hide it
@@ -472,7 +534,7 @@
 
 - (void)insertItemAtIndexPath:(NSIndexPath *)indexPath
 {
-	PSCollectionViewLayoutAttributes *attributes = [[PSCollectionViewLayoutAttributes alloc] init];
+	PSCollectionViewItemLayoutAttributes *attributes = [[PSCollectionViewItemLayoutAttributes alloc] init];
 	
 	NSNumber *section = @(indexPath.section);
 	NSMutableArray *sectionItems = [_sectionItems objectForKey:section];
@@ -495,7 +557,7 @@
 	NSNumber *section = @(indexPath.section);
 	NSMutableArray *sectionItems = [_sectionItems objectForKey:section];
 	if (sectionItems) {
-		PSCollectionViewLayoutAttributes *attributes = sectionItems[indexPath.item];
+		PSCollectionViewItemLayoutAttributes *attributes = sectionItems[indexPath.item];
 		[self enqueueReusableView:attributes.visibleCell];
 		
 		[sectionItems removeObjectAtIndex:indexPath.item];
@@ -524,23 +586,29 @@
 
 - (void)invalidateLayoutOfItemsAfterIndexPath:(NSIndexPath *)indexPath
 {
+	//invalidate all section headers for all subsequent sections
+	for (NSUInteger section = indexPath.section + 1; section < [_sectionHeaders count]; section++) {
+		PSCollectionViewSectionViewLayoutAttributes *sectionHeader = _sectionHeaders[section];
+		sectionHeader.valid = NO;
+	}
+	
 	[_sectionItems enumerateKeysAndObjectsUsingBlock:^(NSNumber *sectionNumber, NSMutableArray *sectionItems, BOOL *stop) {
 		NSInteger section = [sectionNumber integerValue];
-		if (indexPath.section > section) {
+		if (section > indexPath.section) {
 			//invalidate all items in this section
-			for (PSCollectionViewLayoutAttributes *attributes in sectionItems) {
+			//the column heights don't need to be invalidated since the section as a whole will be moved
+			for (PSCollectionViewItemLayoutAttributes *attributes in sectionItems) {
 				[self invalidateItemLayoutAttributes:attributes];
 			}
-			[self resetColumnHeightsInSection:section];
 		} else if (indexPath.section == section) {
 			//invalidate only items after this item
 			for (int i=indexPath.item; i < [sectionItems count]; i++) {
-				PSCollectionViewLayoutAttributes *attributes = sectionItems[i];
+				PSCollectionViewItemLayoutAttributes *attributes = sectionItems[i];
 				[self invalidateItemLayoutAttributes:attributes];
 			}
 			[self resetColumnHeightsInSection:section];
 		}
-	}];	
+	}];
 	
 	//get the max Y values from the previous elements in each column (only need to get numCols number of elements)
 	//this does not update the content size since that will be done in performLayout once all the batched changes are applied
@@ -548,14 +616,18 @@
 	NSMutableIndexSet *completedColumns = [NSMutableIndexSet indexSet];
 	NSInteger i = indexPath.item - 1;
 	NSMutableArray *sectionItems = [_sectionItems objectForKey:@(indexPath.section)];
+	CGFloat yOffsetOfSection = [self yOffsetForBeginningOfSection:indexPath.section];
 	while (i >= 0) {
-		PSCollectionViewLayoutAttributes *attributes = sectionItems[i];
+		PSCollectionViewItemLayoutAttributes *attributes = sectionItems[i];
 		if (attributes.valid && [completedColumns containsIndex:attributes.currentColumn] == NO) {
+			PSCollectionViewSectionViewLayoutAttributes *sectionHeader = [self sectionHeaderAttributesForSection:indexPath.section];
+			
 			NSMutableArray *colHeights = _sectionColumnHeights[indexPath.section];
-			colHeights[attributes.currentColumn] = @(CGRectGetMaxY(attributes.frame) - self.headerView.height + self.margin);
+			CGFloat height = CGRectGetMaxY(attributes.frame) - yOffsetOfSection;
+			colHeights[attributes.currentColumn] = @(height - sectionHeader.view.height + self.margin);
 			[completedColumns addIndex:attributes.currentColumn];
 		}
-		//stop checking if all columns have been updated
+		//if all columns have been updated, stop checking
 		if ([completedColumns count] == self.numCols) {
 			break;
 		}
@@ -573,8 +645,9 @@
 		totalHeight += self.headerView.height;
 	}
 	
+	//heights of all sections
 	for (NSUInteger i = 0; i < _numSections; i++) {
-		totalHeight += [self heightOfLongestColumnInSection:i];
+		totalHeight += [self heightOfSection:i];
 	}
 	
 	if (self.footerView) {
@@ -588,19 +661,57 @@
 
 #pragma mark - Helpers
 
-- (CGFloat)yOffsetForItemInSection:(NSUInteger)section column:(NSUInteger)column
+- (PSCollectionViewSectionViewLayoutAttributes *)sectionHeaderAttributesForSection:(NSUInteger)section
+{
+	if (section < [_sectionHeaders count]) {
+		return _sectionHeaders[section];
+	}
+	return nil;
+}
+
+- (CGFloat)heightOfSection:(NSUInteger)section
+{
+	CGFloat height = 0.0f;
+	
+	PSCollectionViewSectionViewLayoutAttributes *header = [self sectionHeaderAttributesForSection:section];
+	if (header.view) {
+		height += header.view.height;
+	}
+	
+	height += [self heightOfLongestColumnInSection:section];
+	
+	return height;
+}
+
+- (CGFloat)yOffsetForBeginningOfSection:(NSUInteger)section
 {
 	//the yoffset is the height of all previous sections, plus the height of the column in the current section
 	CGFloat height = 0.0f;
 	
+	//collection view header
 	if (self.headerView) {
 		height += self.headerView.height;
 	}
 	
+	//add the heights of all previous sections
 	if (section > 0) {
 		for (NSUInteger i = 0; i < section; i++) {
-			height += [self heightOfLongestColumnInSection:i];
+			height += [self heightOfSection:i];
 		}
+	}
+	
+	return height;
+}
+
+- (CGFloat)yOffsetForItemInSection:(NSUInteger)section column:(NSUInteger)column
+{
+	//the yoffset is the height of all previous sections, plus the height of the column in the current section
+	CGFloat height = [self yOffsetForBeginningOfSection:section];
+	
+	//section header height
+	PSCollectionViewSectionViewLayoutAttributes *sectionHeaderAttributes = [self sectionHeaderAttributesForSection:section];
+	if (sectionHeaderAttributes.view) {
+		height += sectionHeaderAttributes.view.height;
 	}
 	
 	NSArray *columnHeights = _sectionColumnHeights[section];
@@ -633,10 +744,10 @@
 - (NSUInteger)longestColumnInSection:(NSUInteger)section
 {
 	NSInteger col = 0;
-	NSMutableArray *sectionColumnHeights = _sectionColumnHeights[section];
-	CGFloat maxHeight = [sectionColumnHeights[col] floatValue];
-	for (int i = 1; i < [sectionColumnHeights count]; i++) {
-		CGFloat colHeight = [sectionColumnHeights[i] floatValue];
+	NSMutableArray *columnHeights = _sectionColumnHeights[section];
+	CGFloat maxHeight = [columnHeights[col] floatValue];
+	for (int i = 1; i < [columnHeights count]; i++) {
+		CGFloat colHeight = [columnHeights[i] floatValue];
 		if (colHeight > maxHeight) {
 			col = i;
 			maxHeight = colHeight;
@@ -695,10 +806,10 @@
 {
 	CGPoint tapPoint = [gestureRecognizer locationInView:self];
 	
-	__block PSCollectionViewLayoutAttributes *selectedCell = nil;
+	__block PSCollectionViewItemLayoutAttributes *selectedCell = nil;
 	__block NSIndexPath *selectedIndexPath = nil;
 	[_sectionItems enumerateKeysAndObjectsUsingBlock:^(NSNumber *sectionNumber, NSArray *sectionItems, BOOL *stop) {
-		[sectionItems enumerateObjectsUsingBlock:^(PSCollectionViewLayoutAttributes *candidate, NSUInteger idx, BOOL *stop) {
+		[sectionItems enumerateObjectsUsingBlock:^(PSCollectionViewItemLayoutAttributes *candidate, NSUInteger idx, BOOL *stop) {
 			if (candidate.valid && CGRectContainsPoint(candidate.frame, tapPoint)) {
 				selectedCell = candidate;
 				selectedIndexPath = [NSIndexPath indexPathForItem:idx inSection:[sectionNumber integerValue]];

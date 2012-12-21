@@ -16,6 +16,4 @@
 @property (nonatomic, assign) BOOL valid;
 @property (nonatomic, assign) BOOL previouslyVisible;
 
-@property (nonatomic, strong) PSCollectionViewCell *visibleCell;
-
 @end
