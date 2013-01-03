@@ -429,8 +429,19 @@
 			UIView *sectionHeader = sectionHeaderAttributes.view;
 			CGSize headerSize = [sectionHeader sizeThatFits:CGSizeMake(self.width, CGFLOAT_MAX)];
 			CGFloat yOffset = [self yOffsetForBeginningOfSection:section];
-			sectionHeader.frame = CGRectMake(CGRectGetMinX(self.bounds), yOffset, self.width, headerSize.height);
+			CGRect frame = CGRectMake(CGRectGetMinX(self.bounds), yOffset, self.width, headerSize.height);
 			sectionHeaderAttributes.valid = YES;
+			
+			//animations shouldn't happen if the section header hasn't had a frame yet
+			if (self.animateLayoutChanges && CGRectEqualToRect(sectionHeader.frame, CGRectZero) == NO) {
+				[UIView animateWithDuration:kAnimationDuration animations:^{
+					sectionHeader.frame = frame;
+				}];
+			} else {
+				[UIView setAnimationsEnabled:NO];
+				sectionHeader.frame = frame;
+				[UIView setAnimationsEnabled:YES];
+			}
 			
 			recalculateContentSize = YES;
 		}
