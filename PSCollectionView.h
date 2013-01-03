@@ -41,11 +41,13 @@
 @property (nonatomic, assign, readonly) NSInteger numCols;
 @property (nonatomic, assign) NSInteger numColsLandscape;
 @property (nonatomic, assign) NSInteger numColsPortrait;
-@property (nonatomic, assign) BOOL animateFirstCellAppearance;
-@property (nonatomic, unsafe_unretained) id <PSCollectionViewDelegate> collectionViewDelegate;
-@property (nonatomic, unsafe_unretained) id <PSCollectionViewDataSource> collectionViewDataSource;
+@property (nonatomic, assign) BOOL animateLayoutChanges;
+@property (nonatomic, weak) id <PSCollectionViewDelegate> collectionViewDelegate;
+@property (nonatomic, weak) id <PSCollectionViewDataSource> collectionViewDataSource;
 
 #pragma mark - Public Methods
+
+- (void)invalidateLayout;
 
 /**
  Reloads the collection view
@@ -57,12 +59,12 @@
  Dequeues a reusable view that was previously initialized
  This is similar to UITableView dequeueReusableCellWithIdentifier
  */
-- (UIView *)dequeueReusableView;
+- (PSCollectionViewCell *)dequeueReusableViewWithIdentifier:(NSString *)reuseIdentifier;
 
-/**
- Tells the collection view one more PSCollectionViewCell is added to the end
- */
-- (void)appendView;
+- (void)insertItemAtIndexPath:(NSIndexPath *)indexPath;
+- (void)removeItemAtIndexPath:(NSIndexPath *)indexPath;
+
+- (void)performBatchUpdates:(void (^)(void))updates completion:(void (^)(void))completion;
 
 @end
 
@@ -71,7 +73,7 @@
 @protocol PSCollectionViewDelegate <NSObject>
 
 @optional
-- (void)collectionView:(PSCollectionView *)collectionView didSelectView:(PSCollectionViewCell *)view atIndex:(NSInteger)index;
+- (void)collectionView:(PSCollectionView *)collectionView didSelectView:(PSCollectionViewCell *)view atIndexPath:(NSIndexPath *)indexPath;
 
 @end
 
@@ -80,8 +82,12 @@
 @protocol PSCollectionViewDataSource <NSObject>
 
 @required
-- (NSInteger)numberOfViewsInCollectionView:(PSCollectionView *)collectionView;
-- (PSCollectionViewCell *)collectionView:(PSCollectionView *)collectionView viewAtIndex:(NSInteger)index;
-- (CGFloat)heightForViewAtIndex:(NSInteger)index;
+- (NSUInteger)numberOfSectionsInCollectionView:(PSCollectionView *)collectionView;
+- (NSUInteger)collectionView:(PSCollectionView *)collectionView numberOfViewsInSection:(NSUInteger)section;
+- (PSCollectionViewCell *)collectionView:(PSCollectionView *)collectionView viewAtIndexPath:(NSIndexPath *)indexPath;
+- (CGFloat)heightForViewAtIndexPath:(NSIndexPath *)indexPath;
+
+@optional
+- (UIView *)sectionHeaderForSection:(NSUInteger)section;
 
 @end
