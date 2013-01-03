@@ -26,6 +26,9 @@
 @interface PSCollectionViewCell : UIView
 
 @property (nonatomic, strong) id object;
+@property (nonatomic, readonly, copy) NSString *reuseIdentifier;
+
+- (id)initWithFrame:(CGRect)frame reuseIdentifier:(NSString *)reuseIdentifier;
 
 - (void)prepareForReuse;
 - (void)fillViewWithObject:(id)object;
