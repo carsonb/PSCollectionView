@@ -271,8 +271,8 @@
 	//retrieve the section header and footers
 	for (NSUInteger i = 0; i < _numSections; i++) {
 		PSCollectionViewSectionViewLayoutAttributes *headerAttributes = [[PSCollectionViewSectionViewLayoutAttributes alloc] init];
-		if ([self.collectionViewDataSource respondsToSelector:@selector(sectionHeaderForSection:)]) {
-			UIView *sectionHeader = [self.collectionViewDataSource sectionHeaderForSection:i];
+		if ([self.collectionViewDataSource respondsToSelector:@selector(collectionView:sectionHeaderForSection:)]) {
+			UIView *sectionHeader = [self.collectionViewDataSource collectionView:self sectionHeaderForSection:i];
 			headerAttributes.view = sectionHeader;
 			[self addSubview:sectionHeader];
 		}
@@ -455,7 +455,7 @@
 				//ensure we have the height for this item
 				CGFloat height = itemAttributes.frame.size.height;
 				if (height == 0.0f) {
-					height = [self.collectionViewDataSource heightForViewAtIndexPath:indexPath];
+					height = [self.collectionViewDataSource collectionView:self heightForViewAtIndexPath:indexPath];
 				}
 				
 				//find the shortest column

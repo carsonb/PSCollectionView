@@ -85,9 +85,9 @@
 - (NSUInteger)numberOfSectionsInCollectionView:(PSCollectionView *)collectionView;
 - (NSUInteger)collectionView:(PSCollectionView *)collectionView numberOfViewsInSection:(NSUInteger)section;
 - (PSCollectionViewCell *)collectionView:(PSCollectionView *)collectionView viewAtIndexPath:(NSIndexPath *)indexPath;
-- (CGFloat)heightForViewAtIndexPath:(NSIndexPath *)indexPath;
+- (CGFloat)collectionView:(PSCollectionView *)collectionView heightForViewAtIndexPath:(NSIndexPath *)indexPath;
 
 @optional
-- (UIView *)sectionHeaderForSection:(NSUInteger)section;
+- (UIView *)collectionView:(PSCollectionView *)collectionView sectionHeaderForSection:(NSUInteger)section;
 
 @end
