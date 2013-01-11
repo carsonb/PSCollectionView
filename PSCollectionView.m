@@ -312,6 +312,7 @@
 {
 	attributes.valid = NO;
 	attributes.frame = CGRectZero;
+	attributes.previouslyVisible = NO;
 }
 
 - (void)invalidateLayout
