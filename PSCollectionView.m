@@ -319,6 +319,7 @@
 {
 	for (PSCollectionViewSectionViewLayoutAttributes *sectionHeader in _sectionHeaders) {
 		sectionHeader.valid = NO;
+		sectionHeader.previouslyVisible = NO;
 	}
 	for (NSArray *sectionItems in [_sectionItems allValues]) {
 		[sectionItems enumerateObjectsWithOptions:NSEnumerationConcurrent usingBlock:^(PSCollectionViewItemLayoutAttributes *attributes, NSUInteger idx, BOOL *stop) {
@@ -434,7 +435,7 @@
 			sectionHeaderAttributes.valid = YES;
 			
 			//animations shouldn't happen if the section header hasn't had a frame yet
-			if (self.animateLayoutChanges && CGRectEqualToRect(sectionHeader.frame, CGRectZero) == NO) {
+			if (self.animateLayoutChanges && sectionHeaderAttributes.previouslyVisible && CGRectEqualToRect(sectionHeader.frame, CGRectZero) == NO) {
 				[UIView animateWithDuration:kAnimationDuration animations:^{
 					sectionHeader.frame = frame;
 				}];
@@ -443,6 +444,7 @@
 				sectionHeader.frame = frame;
 				[UIView setAnimationsEnabled:YES];
 			}
+			sectionHeaderAttributes.previouslyVisible = YES;
 			
 			recalculateContentSize = YES;
 		}
