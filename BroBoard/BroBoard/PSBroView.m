@@ -32,11 +32,11 @@ captionLabel = _captionLabel;
     if (self) {
         self.backgroundColor = [UIColor whiteColor];
         
-        self.imageView = [[[UIImageView alloc] initWithFrame:CGRectZero] autorelease];
+        self.imageView = [[UIImageView alloc] initWithFrame:CGRectZero];
         self.imageView.clipsToBounds = YES;
         [self addSubview:self.imageView];
         
-        self.captionLabel = [[[UILabel alloc] initWithFrame:CGRectZero] autorelease];
+        self.captionLabel = [[UILabel alloc] initWithFrame:CGRectZero];
         self.captionLabel.font = [UIFont boldSystemFontOfSize:14.0];
         self.captionLabel.numberOfLines = 0;
         [self addSubview:self.captionLabel];
@@ -53,7 +53,6 @@ captionLabel = _captionLabel;
 - (void)dealloc {
     self.imageView = nil;
     self.captionLabel = nil;
-    [super dealloc];
 }
 
 - (void)layoutSubviews {

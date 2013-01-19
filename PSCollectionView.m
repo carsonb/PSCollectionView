@@ -453,8 +453,8 @@
 		NSMutableArray *sectionItems = _sectionItems[sectionNumber];
 		[sectionItems enumerateObjectsUsingBlock:^(PSCollectionViewItemLayoutAttributes *itemAttributes, NSUInteger idx, BOOL *stop) {
 			if (itemAttributes.valid == NO) {
-				NSIndexPath *indexPath = [NSIndexPath indexPathForItem:idx inSection:section];
-				
+				NSIndexPath *indexPath = [NSIndexPath indexPathForRow:idx inSection:section];
+                
 				//ensure we have the height for this item
 				CGFloat height = itemAttributes.frame.size.height;
 				if (height == 0.0f) {
@@ -500,7 +500,7 @@
 				itemAttributes.visibleCell = nil;
 			} else if (visibleCell && itemAttributes.visibleCell == nil) {
 				//Cell is now visible, add it in
-				NSIndexPath *indexPath = [NSIndexPath indexPathForItem:i inSection:[sectionNumber integerValue]];
+				NSIndexPath *indexPath = [NSIndexPath indexPathForRow:i inSection:[sectionNumber integerValue]];
 				PSCollectionViewCell *newCell = [self.collectionViewDataSource collectionView:self viewAtIndexPath:indexPath];
 				itemAttributes.visibleCell = newCell;
 				[self addSubview:newCell];
@@ -826,14 +826,14 @@
 		[sectionItems enumerateObjectsUsingBlock:^(PSCollectionViewItemLayoutAttributes *candidate, NSUInteger idx, BOOL *stop) {
 			if (candidate.valid && CGRectContainsPoint(candidate.frame, tapPoint)) {
 				selectedCell = candidate;
-				selectedIndexPath = [NSIndexPath indexPathForItem:idx inSection:[sectionNumber integerValue]];
+				selectedIndexPath = [NSIndexPath indexPathForRow:idx inSection:[sectionNumber integerValue]];
 				*stop = YES;
 			}
 		}];
 	}];
 	
 	PSCollectionViewCell *cell = selectedCell.visibleCell;
-	if (cell) {
+	if (cell && [self.collectionViewDelegate respondsToSelector:@selector(collectionView:didSelectView:atIndexPath:)]) {
 		[self.collectionViewDelegate collectionView:self didSelectView:cell atIndexPath:selectedIndexPath];
 	}
 }

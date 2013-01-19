@@ -63,9 +63,7 @@ collectionView = _collectionView;
     self.collectionView.collectionViewDataSource = nil;
     
     self.collectionView = nil;
-    self.items = nil;
-    
-    [super dealloc];
+    self.items = nil;    
 }
 
 - (void)viewDidLoad {
@@ -110,7 +108,7 @@ collectionView = _collectionView;
         if (!error && responseCode == 200) {
             id res = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:nil];
             if (res && [res isKindOfClass:[NSDictionary class]]) {
-                self.items = [res objectForKey:@"gallery"];
+                self.items = [res objectForKey:@"data"];
                 [self dataSourceDidLoad];
             } else {
                 [self dataSourceDidError];
@@ -130,14 +128,20 @@ collectionView = _collectionView;
 }
 
 #pragma mark - PSCollectionViewDelegate and DataSource
-- (NSInteger)numberOfViewsInCollectionView:(PSCollectionView *)collectionView {
+
+- (NSUInteger) numberOfSectionsInCollectionView:(PSCollectionView *)collectionView {
+    return 1;
+}
+
+- (NSUInteger) collectionView:(PSCollectionView *)collectionView numberOfViewsInSection:(NSUInteger)section {
     return [self.items count];
 }
 
-- (PSCollectionViewCell *)collectionView:(PSCollectionView *)collectionView viewAtIndex:(NSInteger)index {
-    NSDictionary *item = [self.items objectAtIndex:index];
+- (PSCollectionViewCell *)collectionView:(PSCollectionView *)collectionView viewAtIndexPath:(NSIndexPath *)indexPath {
+    static NSString *viewIdentifier = @"ViewIdentifier";
+    NSDictionary *item = [self.items objectAtIndex:indexPath.row];
     
-    PSBroView *v = (PSBroView *)[self.collectionView dequeueReusableView];
+    PSBroView *v = (PSBroView *)[self.collectionView dequeueReusableViewWithIdentifier:viewIdentifier];
     if (!v) {
         v = [[PSBroView alloc] initWithFrame:CGRectZero];
     }
@@ -147,8 +151,8 @@ collectionView = _collectionView;
     return v;
 }
 
-- (CGFloat)heightForViewAtIndex:(NSInteger)index {
-    NSDictionary *item = [self.items objectAtIndex:index];
+- (CGFloat)collectionView:(PSCollectionView *)collectionView heightForViewAtIndexPath:(NSIndexPath *)indexPath {
+    NSDictionary *item = [self.items objectAtIndex:indexPath.row];
     
     return [PSBroView heightForViewWithObject:item inColumnWidth:self.collectionView.colWidth];
 }
