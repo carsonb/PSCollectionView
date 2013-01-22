@@ -315,11 +315,16 @@
 	attributes.previouslyVisible = NO;
 }
 
+- (void)invalidateSectionLayoutAttributes:(PSCollectionViewSectionViewLayoutAttributes *)attributes
+{
+	attributes.valid = NO;
+	attributes.previouslyVisible = NO;
+}
+
 - (void)invalidateLayout
 {
 	for (PSCollectionViewSectionViewLayoutAttributes *sectionHeader in _sectionHeaders) {
-		sectionHeader.valid = NO;
-		sectionHeader.previouslyVisible = NO;
+		[self invalidateSectionLayoutAttributes:sectionHeader];
 	}
 	for (NSArray *sectionItems in [_sectionItems allValues]) {
 		[sectionItems enumerateObjectsWithOptions:NSEnumerationConcurrent usingBlock:^(PSCollectionViewItemLayoutAttributes *attributes, NSUInteger idx, BOOL *stop) {
@@ -603,7 +608,7 @@
 	//invalidate all section headers for all subsequent sections
 	for (NSUInteger section = indexPath.section + 1; section < [_sectionHeaders count]; section++) {
 		PSCollectionViewSectionViewLayoutAttributes *sectionHeader = _sectionHeaders[section];
-		sectionHeader.valid = NO;
+		[self invalidateSectionLayoutAttributes:sectionHeader];
 	}
 	
 	[_sectionItems enumerateKeysAndObjectsUsingBlock:^(NSNumber *sectionNumber, NSMutableArray *sectionItems, BOOL *stop) {
@@ -620,8 +625,8 @@
 				PSCollectionViewItemLayoutAttributes *attributes = sectionItems[i];
 				[self invalidateItemLayoutAttributes:attributes];
 			}
-			[self resetColumnHeightsInSection:section];
 		}
+		[self resetColumnHeightsInSection:section];
 	}];
 	
 	//get the max Y values from the previous elements in each column (only need to get numCols number of elements)
