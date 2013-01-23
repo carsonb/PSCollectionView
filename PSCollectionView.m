@@ -619,14 +619,15 @@
 			for (PSCollectionViewItemLayoutAttributes *attributes in sectionItems) {
 				[self invalidateItemLayoutAttributes:attributes];
 			}
+			[self resetColumnHeightsInSection:section];
 		} else if (indexPath.section == section) {
 			//invalidate only items after this item
 			for (int i=indexPath.item; i < [sectionItems count]; i++) {
 				PSCollectionViewItemLayoutAttributes *attributes = sectionItems[i];
 				[self invalidateItemLayoutAttributes:attributes];
 			}
+			[self resetColumnHeightsInSection:section];
 		}
-		[self resetColumnHeightsInSection:section];
 	}];
 	
 	//get the max Y values from the previous elements in each column (only need to get numCols number of elements)
