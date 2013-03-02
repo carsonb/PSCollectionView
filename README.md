@@ -4,9 +4,15 @@ It's a Pinterest style scroll view designed to be used similar to a UITableView.
 
 It supports Portrait and Landscape orientations.
 
-I built this as a hack to show my friends. Any suggestions or improvements are very welcome!
+This version is an almost complete rewrite of the layout code to support additional features such as:
+  1. Multiple sections
+  2. Section headers and footers
+  3. Improved performance and reduced memory usage, especially during fast scrolling operations.
 
-Coming soon... A fully functional demo app.
+Due to the inclusion of multiple section support, this fork is not API compatible with the original PSCollectionView found at https://github.com/ptshih/PSCollectionView.
+Thanks to Peter Shih (https://github.com/ptshih) for writing the original PSCollectionView which forms the basis of this version.
+
+The rest of this README is the same as the README in the original PSCollectionView repository.
 
 What is PSCollectionViewCell?
 ---
