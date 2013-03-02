@@ -9,7 +9,7 @@ This version is an almost complete rewrite of the layout code to support additio
   2. Section headers and footers
   3. Improved performance and reduced memory usage, especially during fast scrolling operations.
 
-Due to the inclusion of multiple section support, this fork is not API compatible with the original PSCollectionView found at https://github.com/ptshih/PSCollectionView
+Due to the inclusion of multiple section support, this fork is not API compatible with the original PSCollectionView found at https://github.com/ptshih/PSCollectionView.
 Thanks to Peter Shih (https://github.com/ptshih) for writing the original PSCollectionView which forms the basis of this version.
 
 The rest of this README is the same as the README in the original PSCollectionView repository.
