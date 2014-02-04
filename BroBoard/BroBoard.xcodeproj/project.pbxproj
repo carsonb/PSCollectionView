@@ -19,6 +19,10 @@
 		28C66827156F3E84008E82CF /* PSCollectionView.m in Sources */ = {isa = PBXBuildFile; fileRef = 28C66824156F3E84008E82CF /* PSCollectionView.m */; };
 		28C66828156F3E84008E82CF /* PSCollectionViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 28C66826156F3E84008E82CF /* PSCollectionViewCell.m */; };
 		28C6682C156F4073008E82CF /* PSBroView.m in Sources */ = {isa = PBXBuildFile; fileRef = 28C6682B156F4073008E82CF /* PSBroView.m */; };
+		D9DDFAE816AB2C5500350F2B /* PSCollectionViewItemLayoutAttributes.m in Sources */ = {isa = PBXBuildFile; fileRef = D9DDFAE316AB2C5500350F2B /* PSCollectionViewItemLayoutAttributes.m */; };
+		D9DDFAE916AB2C5500350F2B /* PSCollectionViewLayoutAttributes.m in Sources */ = {isa = PBXBuildFile; fileRef = D9DDFAE516AB2C5500350F2B /* PSCollectionViewLayoutAttributes.m */; };
+		D9DDFAEA16AB2C5500350F2B /* PSCollectionViewSectionViewLayoutAttributes.m in Sources */ = {isa = PBXBuildFile; fileRef = D9DDFAE716AB2C5500350F2B /* PSCollectionViewSectionViewLayoutAttributes.m */; };
+		D9DDFAEC16AB2C6000350F2B /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D9DDFAEB16AB2C6000350F2B /* Default-568h@2x.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +46,13 @@
 		28C66826156F3E84008E82CF /* PSCollectionViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PSCollectionViewCell.m; path = ../PSCollectionViewCell.m; sourceTree = "<group>"; };
 		28C6682A156F4073008E82CF /* PSBroView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PSBroView.h; sourceTree = "<group>"; };
 		28C6682B156F4073008E82CF /* PSBroView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PSBroView.m; sourceTree = "<group>"; };
+		D9DDFAE216AB2C5500350F2B /* PSCollectionViewItemLayoutAttributes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PSCollectionViewItemLayoutAttributes.h; path = ../PSCollectionViewItemLayoutAttributes.h; sourceTree = "<group>"; };
+		D9DDFAE316AB2C5500350F2B /* PSCollectionViewItemLayoutAttributes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PSCollectionViewItemLayoutAttributes.m; path = ../PSCollectionViewItemLayoutAttributes.m; sourceTree = "<group>"; };
+		D9DDFAE416AB2C5500350F2B /* PSCollectionViewLayoutAttributes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PSCollectionViewLayoutAttributes.h; path = ../PSCollectionViewLayoutAttributes.h; sourceTree = "<group>"; };
+		D9DDFAE516AB2C5500350F2B /* PSCollectionViewLayoutAttributes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PSCollectionViewLayoutAttributes.m; path = ../PSCollectionViewLayoutAttributes.m; sourceTree = "<group>"; };
+		D9DDFAE616AB2C5500350F2B /* PSCollectionViewSectionViewLayoutAttributes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PSCollectionViewSectionViewLayoutAttributes.h; path = ../PSCollectionViewSectionViewLayoutAttributes.h; sourceTree = "<group>"; };
+		D9DDFAE716AB2C5500350F2B /* PSCollectionViewSectionViewLayoutAttributes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PSCollectionViewSectionViewLayoutAttributes.m; path = ../PSCollectionViewSectionViewLayoutAttributes.m; sourceTree = "<group>"; };
+		D9DDFAEB16AB2C6000350F2B /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +72,7 @@
 		28C667F4156F3E60008E82CF = {
 			isa = PBXGroup;
 			children = (
+				D9DDFAEB16AB2C6000350F2B /* Default-568h@2x.png */,
 				28C66829156F3E88008E82CF /* PSCollectionView */,
 				28C66809156F3E60008E82CF /* BroBoard */,
 				28C66802156F3E60008E82CF /* Frameworks */,
@@ -116,6 +128,12 @@
 		28C66829156F3E88008E82CF /* PSCollectionView */ = {
 			isa = PBXGroup;
 			children = (
+				D9DDFAE216AB2C5500350F2B /* PSCollectionViewItemLayoutAttributes.h */,
+				D9DDFAE316AB2C5500350F2B /* PSCollectionViewItemLayoutAttributes.m */,
+				D9DDFAE416AB2C5500350F2B /* PSCollectionViewLayoutAttributes.h */,
+				D9DDFAE516AB2C5500350F2B /* PSCollectionViewLayoutAttributes.m */,
+				D9DDFAE616AB2C5500350F2B /* PSCollectionViewSectionViewLayoutAttributes.h */,
+				D9DDFAE716AB2C5500350F2B /* PSCollectionViewSectionViewLayoutAttributes.m */,
 				28C66823156F3E84008E82CF /* PSCollectionView.h */,
 				28C66824156F3E84008E82CF /* PSCollectionView.m */,
 				28C66825156F3E84008E82CF /* PSCollectionViewCell.h */,
@@ -178,6 +196,7 @@
 				28C6680E156F3E60008E82CF /* InfoPlist.strings in Resources */,
 				28C6681A156F3E60008E82CF /* PSViewController_iPhone.xib in Resources */,
 				28C6681D156F3E60008E82CF /* PSViewController_iPad.xib in Resources */,
+				D9DDFAEC16AB2C6000350F2B /* Default-568h@2x.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -194,6 +213,9 @@
 				28C66827156F3E84008E82CF /* PSCollectionView.m in Sources */,
 				28C66828156F3E84008E82CF /* PSCollectionViewCell.m in Sources */,
 				28C6682C156F4073008E82CF /* PSBroView.m in Sources */,
+				D9DDFAE816AB2C5500350F2B /* PSCollectionViewItemLayoutAttributes.m in Sources */,
+				D9DDFAE916AB2C5500350F2B /* PSCollectionViewLayoutAttributes.m in Sources */,
+				D9DDFAEA16AB2C5500350F2B /* PSCollectionViewSectionViewLayoutAttributes.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -232,6 +254,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				CLANG_ENABLE_OBJC_ARC = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -257,6 +280,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				CLANG_ENABLE_OBJC_ARC = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -278,6 +302,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "BroBoard/BroBoard-Prefix.pch";
 				INFOPLIST_FILE = "BroBoard/BroBoard-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -289,6 +314,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "BroBoard/BroBoard-Prefix.pch";
 				INFOPLIST_FILE = "BroBoard/BroBoard-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -313,6 +339,7 @@
 				28C66822156F3E60008E82CF /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
